@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import numpy as np
 from typing import Tuple
 
@@ -29,26 +29,26 @@ def detect_corners(
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
     """
 
-    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
-    detected, corners = cv2.findChessboardCorners(
+    detected, corners = cv.findChessboardCorners(
         input_gray_img,
         checker_shape,
         None
     )
 
     if detected:
-        refined_corners = cv2.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
+        refined_corners = cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
 
         if show_figure:
-            cv2.drawChessboardCorners(
+            cv.drawChessboardCorners(
                 input_gray_img,
                 checker_shape,
                 refined_corners,
                 detected
             )
-            cv2.imshow("img", input_gray_img)
-            cv2.waitKey()
-            cv2.destroyAllWindows()
+            cv.imshow("img", input_gray_img)
+            cv.waitKey()
+            cv.destroyAllWindows()
         return np.squeeze(refined_corners)
         # return np.squeeze(refined_corners)[:, [1,0]]
