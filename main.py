@@ -1,12 +1,10 @@
 from pathlib import Path
 from enum import Enum
-from algorithm.zhang2000.calibration import calibrate_with_zhang_method
 from algorithm.opencv.calibration import calibrate_with_opencv
 from algorithm.matlab.calibration import calibrate_with_matlab
 
 
 class CalibMethod(Enum):
-    ZHANG2000 = "zhang2000"
     OPENCV = "opencv"
     MATLAB = "matlab"
 
@@ -18,10 +16,11 @@ INPUT_FILES = {
 CONFIG = {
     "input_file_format": ".jpg",
     "calibration_method": CalibMethod.MATLAB,
+    # "calibration_method": CalibMethod.OPENCV,
     "checkerboard": {
-        "num_corners": (9, 6),  # ([numbers of corners per column], [number of corners per row])
-        "checker_size": 21.5,  # mm (millimeter)
-        "show_figure": False,
+        "num_corners": (5, 8),  # ([numbers of corners per column], [number of corners per row])
+        "checker_size": 25,  # mm (millimeter)
+        "show_figure": True,
     },
 }
 
@@ -33,9 +32,7 @@ def run_scripts(input_files: dict, config: dict):
 
     print(f"Calibration method: {config['calibration_method'].value}")
 
-    if config["calibration_method"] == CalibMethod.ZHANG2000:
-        calibrate_with_zhang_method(config, img_file_list)
-    elif config["calibration_method"] == CalibMethod.OPENCV:
+    if config["calibration_method"] == CalibMethod.OPENCV:
         calibrate_with_opencv(config, img_file_list)
     elif config["calibration_method"] == CalibMethod.MATLAB:
         calibrate_with_matlab(config, img_file_list)
