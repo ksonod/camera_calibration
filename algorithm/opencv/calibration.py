@@ -8,7 +8,6 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
     """
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
     """
-
     num_img_files = len(img_file_list)
 
     objp = np.zeros(
@@ -46,18 +45,23 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
                     corners=detected_corners_subpix,
                     patternWasFound=detected
                 )
-                cv.imshow(winname='img', mat=img)
+                cv.circle(img=img, center=np.round(points2d[-1][0,0,:]).astype(np.uint16), radius=14, color=(255, 0, 0), thickness=4)
+                cv.imshow(winname=f'Image{idx}', mat=img)
                 cv.waitKey()
         else:
             print(f"Corners are not detected ({img_file.name})")
     cv.destroyAllWindows()
 
     ret, K, distortion_params, rvecs, tvecs = cv.calibrateCamera(
-        objectPoints=points3d, imagePoints=points2d, imageSize=gray_img.shape[::-1], cameraMatrix=None, distCoeffs=None
+        objectPoints=points3d, imagePoints=points2d, imageSize=gray_img.shape, cameraMatrix=None, distCoeffs=None
     )
 
     np.set_printoptions(precision=3, suppress=True)
-    print(f"- Intrinsic parameters : \n{K}\n")
+    print(f"- Intrinsic parameters : \n{K}")
+
+    # See the link below to check the definition of distortion coefficients.
+    # https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html#ga3207604e4b1a1758aa66acb6ed5aa65d
+    print(f" Distortion parameters (k1 k2 p1 p2 k3 k4 ...): {distortion_params}")
 
     print("- Extrinsic parameters")
 
@@ -75,12 +79,9 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
         )
 
         print(f"{img_file_list[i].name} | Reprojection error = {reprojection_error[-1]:.5f}")
-        if config["show_rotvec"]:
-            print("Rot. vec: ", rvecs[i].flatten())
-            print("Trans. vec: ", tvecs[i].flatten(), "\n")
-        else:
-            Rt = np.concatenate([cv.Rodrigues(rvecs[i])[0], tvecs[i].reshape(3, 1)], axis=1)
-            print(f"[R | t]:\n{Rt}\n")
+        Rt = np.concatenate([cv.Rodrigues(rvecs[i])[0], tvecs[i].reshape(3, 1)], axis=1)
+        print(f"[R | t]:\n{Rt}")
+        print("Rot. vec: ", rvecs[i].flatten(), "\n")
 
     print("- Mean reprojection error")
     print(f" Overall: {np.mean(reprojection_error):.5f}")  # Averaging reprojection errors over all images

@@ -44,6 +44,8 @@ function func(imageFileNames, squareSize)
     rp = cameraParams.ReprojectedPoints;
     save(save_file_path, 'rp');
 
+    save_file_path = [pwd, '/data/imagePoints.mat'];
+    save(save_file_path, 'imagePoints');
 
     disp('Data saved.');
 end

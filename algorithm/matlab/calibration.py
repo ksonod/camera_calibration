@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
+from PIL import Image
 
 
 def calibrate_with_matlab(config: dict, img_file_list: list):
@@ -33,7 +34,7 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
 
         print("*.mat files exist. Start loading and processing data.")
 
-        A, K, radial_distortion, tangential_distortion, reprojection_error = load_mat_files(data_folder)
+        A, K, radial_distortion, tangential_distortion, reprojection_error, points2d = load_mat_files(data_folder)
         absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :] ** 2 + reprojection_error[:, 1, :] ** 2)
 
         # Reprojection error is averaged over all the detected points for each image
@@ -42,24 +43,37 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
         print("Finished processing data... \n")
 
         np.set_printoptions(precision=3, suppress=True)
-        print(f"- Intrinsic parameters : \n{K}\n")
-
+        print(f"- Intrinsic parameters : \n{K}")
+        print(f"  Radial distortion k: {radial_distortion}")
+        print(f"  Tangential distortion p: {tangential_distortion}\n")
         print("- Extrinsic parameters")
-        for idx in range(num_img_files):
-            print(f"{img_file_list[idx].name} | Reprojection error = {mean_abs_reproject_err[idx]:.5f}")
 
-            if config["show_rotvec"]:
-                print(
-                    "Rot. vec: ",
-                    np.array(
-                        eng.rotmat2vec3d(
-                            matlab.double(A[0, idx][:3, :3].tolist())
-                        )
+        for idx_file in range(num_img_files):
+
+            if config["checkerboard"]["show_figure"]:
+                plt.figure()
+
+                img = np.array(Image.open(img_file_list[idx_file]))
+                plt.imshow(img)
+                plt.title(img_file_list[idx_file].name)
+
+                for idx_points in range(points2d.shape[0]):
+                    plt.plot(points2d[idx_points, 0, idx_file], points2d[idx_points, 1, idx_file], "b.")
+
+                plt.plot(points2d[0, 0, idx_file], points2d[0, 1, idx_file], "ro")
+
+            print(f"{img_file_list[idx_file].name} | Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
+
+            print(f"[R | t]: \n{A[0, idx_file][:3, :]}")
+            print(
+                "Rot. vec: ",
+                np.array(
+                    eng.rotmat2vec3d(
+                        matlab.double(A[0, idx_file][:3, :3].tolist())
                     )
-                )
-                print("Trans. vec: ", A[0, idx][:3, 3], "\n")
-            else:
-                print(f"[R | t]: \n{A[0, idx][:3, :]} \n")
+                ),
+                "\n"
+            )
 
         print("- Mean reprojection error")
         print(f" Overall: {np.mean(absolute_reproject_err):.5f}")  # Averaging reprojection errors over all images
@@ -109,4 +123,8 @@ def load_mat_files(data_folder):
     re = loadmat(data_folder / "reprojectionError.mat")
     reprojection_error = re["re"]  # [number of detected points in a single image] x 2 x [number of images]
 
-    return A, K, radial_distortion, tangential_distortion, reprojection_error
+    # Get detected corners in 2D
+    dp = loadmat(data_folder / "imagePoints.mat")
+    points2d = dp["imagePoints"]  # [number of detected points in a single image] x 2 x [number of images]
+
+    return A, K, radial_distortion, tangential_distortion, reprojection_error, points2d

@@ -23,10 +23,6 @@ CONFIG = {
         "checker_size": 21.5,  # mm (millimeter)
         "show_figure": False,
     },
-
-    # True means rotation and translation vectors will be shown separately. False means an aggregated 3 x 4 matrix will
-    # be shown.
-    "show_rotvec": False,
 }
 
 
@@ -34,6 +30,8 @@ def run_scripts(input_files: dict, config: dict):
 
     img_file_list = list(input_files["img_folder"].glob(f"*{config['input_file_format']}"))
     img_file_list.sort()
+
+    print(f"Calibration method: {config['calibration_method'].value}")
 
     if config["calibration_method"] == CalibMethod.ZHANG2000:
         calibrate_with_zhang_method(config, img_file_list)
