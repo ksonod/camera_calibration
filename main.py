@@ -16,6 +16,7 @@ INPUT_FILES = {
 }
 
 CONFIG = {
+    "input_file_format": ".jpg",
     "calibration_method": CalibMethod.OPENCV,
     "checkerboard": {
         "num_corners": (9, 6),  # ([numbers of corners per column], [number of corners per row])
@@ -27,7 +28,7 @@ CONFIG = {
 
 def run_scripts(input_files: dict, config: dict):
 
-    img_file_list = list(input_files["img_folder"].glob("*.jpg"))
+    img_file_list = list(input_files["img_folder"].glob(f"*{config['input_file_format']}"))
     img_file_list.sort()
 
     if config["calibration_method"] == CalibMethod.ZHANG2000:
@@ -37,7 +38,7 @@ def run_scripts(input_files: dict, config: dict):
     elif config["calibration_method"] == CalibMethod.MATLAB:
         calibrate_with_matlab(config, img_file_list)
     else:
-        raise NotImplementedError()
+        raise NotImplementedError("Select a right calibration method.")
 
 
 if __name__ == "__main__":
