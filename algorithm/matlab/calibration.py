@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
 from PIL import Image
-
+import cv2 as cv
 
 def calibrate_with_matlab(config: dict, img_file_list: list):
     """
@@ -60,7 +60,15 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
                 for idx_points in range(points2d.shape[0]):
                     plt.plot(points2d[idx_points, 0, idx_file], points2d[idx_points, 1, idx_file], "b.")
 
-                plt.plot(points2d[0, 0, idx_file], points2d[0, 1, idx_file], "ro")
+                if radial_distortion.shape[1] == 2:
+                    dist_coef = np.concatenate([radial_distortion.flatten(), tangential_distortion.flatten()])
+                else:
+                    dist_coef = None
+                origin_point = cv.projectPoints(
+                    objectPoints=np.array([0.0, 0.0, 0.0]), rvec=cv.Rodrigues(A[0, idx_file][:3, :3])[0],
+                    tvec=A[0, idx_file][:3, 3].reshape(3, 1), cameraMatrix=K, distCoeffs=dist_coef
+                )[0][0][0]
+                plt.plot(origin_point[0], origin_point[1], "ro")
 
             print(f"{img_file_list[idx_file].name} | Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
 
