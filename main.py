@@ -1,14 +1,14 @@
-import cv2 as cv
 from pathlib import Path
-from PIL import Image
-import numpy as np
 from enum import Enum
 from algorithm.zhang2000.calibration import calibrate_with_zhang_method
 from algorithm.opencv.calibration import calibrate_with_opencv
+from algorithm.matlab.calibration import calibrate_with_matlab
+
 
 class CalibMethod(Enum):
     ZHANG2000 = "zhang2000"
     OPENCV = "opencv"
+    MATLAB = "matlab"
 
 
 INPUT_FILES = {
@@ -16,7 +16,7 @@ INPUT_FILES = {
 }
 
 CONFIG = {
-    "calibration_method": CalibMethod.OPENCV,
+    "calibration_method": CalibMethod.MATLAB,
     "checkerboard": {
         "num_corners": (9, 6),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 21.5,  # mm
@@ -34,6 +34,8 @@ def run_scripts(input_files: dict, config: dict):
         calibrate_with_zhang_method(config, img_file_list)
     elif config["calibration_method"] == CalibMethod.OPENCV:
         calibrate_with_opencv(config, img_file_list)
+    elif config["calibration_method"] == CalibMethod.MATLAB:
+        calibrate_with_matlab(config, img_file_list)
     else:
         raise NotImplementedError()
 

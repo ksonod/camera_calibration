@@ -32,14 +32,6 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
         if ret:
             gray_img_stack.append(gray)
             objpoints.append(objp)
-
-            # objpoints.append(
-            #     create_3d_point_of_checker_corners(
-            #         checker_shape=config["checkerboard"]["num_corners"],
-            #         checker_size=config["checkerboard"]["checker_size"]
-            #     )
-            # )
-
             corners2 = cv.cornerSubPix(gray, corners, (11, 11), (-1, -1), criteria)
             imgpoints.append(corners2)
 
