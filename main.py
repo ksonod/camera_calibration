@@ -16,7 +16,7 @@ INPUT_FILES = {
 }
 
 CONFIG = {
-    "calibration_method": CalibMethod.MATLAB,
+    "calibration_method": CalibMethod.OPENCV,
     "checkerboard": {
         "num_corners": (9, 6),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 21.5,  # mm

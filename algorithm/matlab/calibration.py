@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.io import loadmat
 import matplotlib.pyplot as plt
+from scipy.io import loadmat
 from pathlib import Path
 
 
@@ -35,15 +35,18 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
 
         A, K, radial_distortion, tangential_distortion, reprojection_error = load_mat_files(data_folder)
         absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :] ** 2 + reprojection_error[:, 1, :] ** 2)
-        mean_abs_reproject_err = np.mean(absolute_reproject_err, axis=0)   # each image
+
+        # Reprojection error is averaged over all the detected points for each image
+        mean_abs_reproject_err = np.mean(absolute_reproject_err, axis=0)
 
         print("Finished processing data... \n")
 
+        np.set_printoptions(precision=3, suppress=True)
         print(f"- Intrinsic parameters : \n{K}\n")
 
         print("- Extrinsic parameters")
         for idx in range(num_img_files):
-            print(f"{img_file_list[idx].name} | reprojection error = {mean_abs_reproject_err[idx]}")
+            print(f"{img_file_list[idx].name} | Reprojection error = {mean_abs_reproject_err[idx]:.5f}")
             print(
                 "Rot. vec: ",
                 np.array(
@@ -55,8 +58,14 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
             print("Trans. vec: ", A[0, idx][:3, 3], "\n")
 
         print("- Mean reprojection error")
-        print(f" Overall: {np.mean(absolute_reproject_err)}")
+        print(f" Overall: {np.mean(absolute_reproject_err):.5f}")  # Averaging reprojection errors over all images
 
+        print("**** WARNING ****")
+        print("MATLAB and python count array indices in a different way, i.e., python starts with 0 like a[0], a[1], "
+              "... and so on, and Matlab goes like a(1), a(2), a(3), ..., and so on. Results shown here are based on"
+              "pure MATLAB results. For further processing, small adjustment might be needed. For example, the center "
+              "positions (cx, cy) have to be adjusted by 1 if you want to use the determined intrinsics matrix in "
+              "python scripts.")
 
         plt.figure()
         plt.bar(
