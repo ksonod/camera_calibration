@@ -75,10 +75,12 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
         )
 
         print(f"{img_file_list[i].name} | Reprojection error = {reprojection_error[-1]:.5f}")
-        print("Rot. vec: ", rvecs[i].flatten())
-        print("Trans. vec: ", tvecs[i].flatten(), "\n")
-        # Rt = np.concatenate([cv.Rodrigues(rvecs[0])[0], tvecs[0].reshape(3,1)], axis=1)
-        # print(f"[R | t]:\n{Rt}\n")
+        if config["show_rotvec"]:
+            print("Rot. vec: ", rvecs[i].flatten())
+            print("Trans. vec: ", tvecs[i].flatten(), "\n")
+        else:
+            Rt = np.concatenate([cv.Rodrigues(rvecs[i])[0], tvecs[i].reshape(3, 1)], axis=1)
+            print(f"[R | t]:\n{Rt}\n")
 
     print("- Mean reprojection error")
     print(f" Overall: {np.mean(reprojection_error):.5f}")  # Averaging reprojection errors over all images

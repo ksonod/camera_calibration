@@ -9,7 +9,7 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
     Tested with MATLAB R2023b + python 3.10
     """
     import matlab.engine
-    print("Start MATLAB engine...")
+    print("Start a MATLAB engine...")
     eng = matlab.engine.start_matlab()
     eng.addpath("algorithm/matlab")
 
@@ -47,15 +47,19 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
         print("- Extrinsic parameters")
         for idx in range(num_img_files):
             print(f"{img_file_list[idx].name} | Reprojection error = {mean_abs_reproject_err[idx]:.5f}")
-            print(
-                "Rot. vec: ",
-                np.array(
-                    eng.rotmat2vec3d(
-                        matlab.double(A[0, idx][:3, :3].tolist())
+
+            if config["show_rotvec"]:
+                print(
+                    "Rot. vec: ",
+                    np.array(
+                        eng.rotmat2vec3d(
+                            matlab.double(A[0, idx][:3, :3].tolist())
+                        )
                     )
                 )
-            )
-            print("Trans. vec: ", A[0, idx][:3, 3], "\n")
+                print("Trans. vec: ", A[0, idx][:3, 3], "\n")
+            else:
+                print(f"[R | t]: \n{A[0, idx][:3, :]} \n")
 
         print("- Mean reprojection error")
         print(f" Overall: {np.mean(absolute_reproject_err):.5f}")  # Averaging reprojection errors over all images

@@ -17,12 +17,16 @@ INPUT_FILES = {
 
 CONFIG = {
     "input_file_format": ".jpg",
-    "calibration_method": CalibMethod.OPENCV,
+    "calibration_method": CalibMethod.MATLAB,
     "checkerboard": {
         "num_corners": (9, 6),  # ([numbers of corners per column], [number of corners per row])
-        "checker_size": 21.5,  # mm
+        "checker_size": 21.5,  # mm (millimeter)
         "show_figure": False,
-    }
+    },
+
+    # True means rotation and translation vectors will be shown separately. False means an aggregated 3 x 4 matrix will
+    # be shown.
+    "show_rotvec": False,
 }
 
 
