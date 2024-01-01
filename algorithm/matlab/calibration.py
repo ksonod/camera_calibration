@@ -34,13 +34,33 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
         print("*.mat files exist. Start loading and processing data.")
 
         A, K, radial_distortion, tangential_distortion, reprojection_error = load_mat_files(data_folder)
-        absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :]**2 + reprojection_error[:, 1, :]**2)
+        absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :] ** 2 + reprojection_error[:, 1, :] ** 2)
+        mean_abs_reproject_err = np.mean(absolute_reproject_err, axis=0)   # each image
 
-        print("Finished processing data...")
+        print("Finished processing data... \n")
+
+        print(f"- Intrinsic parameters : \n{K}\n")
+
+        print("- Extrinsic parameters")
+        for idx in range(num_img_files):
+            print(f"{img_file_list[idx].name} | reprojection error = {mean_abs_reproject_err[idx]}")
+            print(
+                "Rot. vec: ",
+                np.array(
+                    eng.rotmat2vec3d(
+                        matlab.double(A[0, idx][:3, :3].tolist())
+                    )
+                )
+            )
+            print("Trans. vec: ", A[0, idx][:3, 3], "\n")
+
+        print("- Mean reprojection error")
+        print(f" Overall: {np.mean(absolute_reproject_err)}")
+
 
         plt.figure()
         plt.bar(
-            np.arange(num_img_files), np.mean(absolute_reproject_err, axis=0), color="blue", alpha=0.5
+            np.arange(num_img_files), mean_abs_reproject_err, color="blue", alpha=0.5
         )
         plt.plot(
             [-0.5, num_img_files-0.5], np.mean(absolute_reproject_err) * np.ones(2), "k--"
