@@ -18,8 +18,8 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
         np.float32
     )  # Object points in 3D
     objp[:, :2] = np.mgrid[
-                  0:config["checkerboard"]["num_corners"][0],
-                  0:config["checkerboard"]["num_corners"][1]
+                    0:config["checkerboard"]["num_corners"][0],
+                    0:config["checkerboard"]["num_corners"][1]
                   ].T.reshape(-1, 2) * config["checkerboard"]["checker_size"]  # Z values are always 0.
 
     points3d = []  # 3D point in real world space
