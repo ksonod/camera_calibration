@@ -3,13 +3,20 @@ This repository provides a Python script for getting camera intrinsics and extri
 This script currently supports two different methods: **OpenCV-based** and **MATLAB-based** methods. 
 
 # How to Use
-The `main.py` code is very simple as shown below.  
+The `main.py` code is very simple as shown below:
 <img src="./docs/images/input_example.png" width="1400">   
 As the method, `CalibMethod.MATLAB` or `CalibMethod.OPENCV` can be selected. Once you specify the `CONFIG` dictionary, you can simply run this code. Please note that all input images should contain a checkerboard with good visibility and be stored in the `./data` folder.  
 
 # What Can this Tool Do?
-By using this tool, intrinsics and extrinsics parameters of your camera can be obtained. The extrinsics parameters can be obtained for each image.    
-<img src="./docs/images/output_example.png" width="400">   
+### 1. Camera Calibration
+By using this tool, intrinsics and extrinsics parameters of a camera can be obtained. The extrinsics parameters can be determined for each image.    
+<img src="./docs/images/output_example.png" width="400">    
+
+### 2. Clarifying the Coordinate System
+In order to interpret the extrinsic parameters better, X and Y axes with a coordinate origin can be visualized together with detected checkerboard corners.  
+<img src="./docs/images/output_example_checkerboard.png" width="200">    
+
+### 3. Reprojection Error Evaluation
 In addition, reprojection error can be also obtained in order to quantitatively assess the quality of the obtained camera calibration parameters.  
 <img src="./docs/images/output_figure.png" width="500">  
 
