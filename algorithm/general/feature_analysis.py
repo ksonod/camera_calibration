@@ -51,4 +51,40 @@ def detect_corners(
             cv.waitKey()
             cv.destroyAllWindows()
         return np.squeeze(refined_corners)
-        # return np.squeeze(refined_corners)[:, [1,0]]
+
+
+def define_XYZ_coordinate_system(
+        rvec: np.ndarray, tvec: np.ndarray, intrinsicK: np.ndarray, distortion_coeff: np.ndarray
+):
+    """
+    Get (X, Y. Z) = (0, 0, 0) and unit vectors along X and Y axes. These values can be used for visualization of X and
+    Y axes.
+    :param rvec: Rotation vector
+    :param tvec: Translation vector
+    :param intrinsicK: Camera intrinsics matrix
+    :param distortion_coeff: Distortion coefficients. It follows OpenCV convention: k1, k2, p1, p2, k3, ....
+    :return:
+        - origion_point: (X,Y,Z) = (0, 0, 0)
+        - x0: Unit vector in the X direction.
+        - y0: Unit vector in the Y direction.
+    """
+
+    # Origin point (X, Y, Z) = (0, 0, 0)
+    origin_point = cv.projectPoints(
+        objectPoints=np.array([0.0, 0.0, 0.0]), rvec=rvec,
+        tvec=tvec, cameraMatrix=intrinsicK, distCoeffs=distortion_coeff
+    )[0][0][0]
+
+    # Set a unit vector in X
+    x0 = cv.projectPoints(
+        objectPoints=np.array([1.0, 0.0, 0.0]), rvec=rvec,
+        tvec=tvec, cameraMatrix=intrinsicK, distCoeffs=distortion_coeff
+    )[0][0][0]
+
+    # Set a unit vector in Y
+    y0 = cv.projectPoints(
+        objectPoints=np.array([0.0, 1.0, 0.0]), rvec=rvec,
+        tvec=tvec, cameraMatrix=intrinsicK, distCoeffs=distortion_coeff
+    )[0][0][0]
+
+    return origin_point, x0, y0

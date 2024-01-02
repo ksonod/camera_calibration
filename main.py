@@ -18,7 +18,7 @@ CONFIG = {
     "calibration_method": CalibMethod.MATLAB,
     # "calibration_method": CalibMethod.OPENCV,
     "checkerboard": {
-        "num_corners": (5, 8),  # ([numbers of corners per column], [number of corners per row])
+        "num_corners": (8, 5),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 25,  # mm (millimeter)
         "show_figure": True,
     },

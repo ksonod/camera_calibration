@@ -2,12 +2,15 @@ import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
 from PIL import Image
+from visualization.checkerboard import show_cb_image_with_detected_corners, draw_XY_arrows
+from algorithm.general.feature_analysis import define_XYZ_coordinate_system
 
 
 def calibrate_with_opencv(config: dict, img_file_list: list):
     """
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
     """
+
     num_img_files = len(img_file_list)
 
     objp = np.zeros(
@@ -37,17 +40,6 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
                 criteria=(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)  # Termination criteria
             )
             points2d.append(detected_corners_subpix)
-
-            if config["checkerboard"]["show_figure"]:
-                cv.drawChessboardCorners(
-                    image=img,
-                    patternSize=config["checkerboard"]["num_corners"],
-                    corners=detected_corners_subpix,
-                    patternWasFound=detected
-                )
-                cv.circle(img=img, center=np.round(points2d[-1][0,0,:]).astype(np.uint16), radius=14, color=(255, 0, 0), thickness=4)
-                cv.imshow(winname=f'Image{idx}', mat=img)
-                cv.waitKey()
         else:
             print(f"Corners are not detected ({img_file.name})")
     cv.destroyAllWindows()
@@ -65,14 +57,46 @@ def calibrate_with_opencv(config: dict, img_file_list: list):
 
     print("- Extrinsic parameters")
 
+    # Arrow setting for visualization
+    magnification_factor = 30
+    head_width = 15
+    head_length = 10
+
     reprojection_error = []
     num_valid_files = len(points2d)  # Number of files where checkerboard corners are detected.
     for i in range(num_valid_files):
+
+        if config["checkerboard"]["show_figure"]:
+            plt.figure()
+
+            img = np.array(Image.open(img_file_list[i]))
+
+            # Show a checkerboard image with detected corners
+            show_cb_image_with_detected_corners(
+                img=img, detected_points=np.squeeze(points2d[i]), figure_title=img_file_list[i].name
+            )
+
+            # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
+            origin_point, x0, y0 = define_XYZ_coordinate_system(
+                rvec=rvecs[i], tvec=tvecs[i], intrinsicK=K, distortion_coeff=distortion_params
+            )
+
+            # Draw arrows to show X and Y axes
+            draw_XY_arrows(
+                origin_point=origin_point,
+                x0=x0,
+                y0=y0,
+                magnification_factor=magnification_factor,
+                head_width=head_width,
+                head_length=head_length,
+            )
+
         projected_points2d, _ = cv.projectPoints(
             objectPoints=points3d[i], rvec=rvecs[i], tvec=tvecs[i], cameraMatrix=K, distCoeffs=distortion_params
         )
 
         err = projected_points2d - points2d[i]
+
         # averaged over all the corners detected in a single image
         reprojection_error.append(
             np.mean(np.sqrt(err[:, :, 0] ** 2 + err[:, :, 1] ** 2))

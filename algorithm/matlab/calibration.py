@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
 from PIL import Image
-import cv2 as cv
+from visualization.checkerboard import show_cb_image_with_detected_corners, draw_XY_arrows
+from algorithm.general.feature_analysis import define_XYZ_coordinate_system
 
 def calibrate_with_matlab(config: dict, img_file_list: list):
     """
@@ -48,27 +49,57 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
         print(f"  Tangential distortion p: {tangential_distortion}\n")
         print("- Extrinsic parameters")
 
+        # Arrow setting for visualization
+        magnification_factor = 30
+        head_width = 15
+        head_length = 10
+
         for idx_file in range(num_img_files):
 
             if config["checkerboard"]["show_figure"]:
                 plt.figure()
 
                 img = np.array(Image.open(img_file_list[idx_file]))
-                plt.imshow(img)
-                plt.title(img_file_list[idx_file].name)
 
-                for idx_points in range(points2d.shape[0]):
-                    plt.plot(points2d[idx_points, 0, idx_file], points2d[idx_points, 1, idx_file], "b.")
+                show_cb_image_with_detected_corners(
+                    img=img, detected_points=points2d[:, :, idx_file], figure_title=img_file_list[idx_file].name
+                )
 
-                if radial_distortion.shape[1] == 2:
-                    dist_coef = np.concatenate([radial_distortion.flatten(), tangential_distortion.flatten()])
-                else:
-                    dist_coef = None
-                origin_point = cv.projectPoints(
-                    objectPoints=np.array([0.0, 0.0, 0.0]), rvec=cv.Rodrigues(A[0, idx_file][:3, :3])[0],
-                    tvec=A[0, idx_file][:3, 3].reshape(3, 1), cameraMatrix=K, distCoeffs=dist_coef
-                )[0][0][0]
-                plt.plot(origin_point[0], origin_point[1], "ro")
+                rvec = np.array(
+                    eng.rotmat2vec3d(
+                        matlab.double(A[0, idx_file][:3, :3].tolist())
+                    )
+                )
+                tvec = A[0, idx_file][:3, 3]
+
+                # Prepare distortion coefficients in the format of OpenCV (k1 k2 p1 p2 k3 k4 ...)
+                if radial_distortion[0].shape[0] == 2:  # MATLAB's default
+                    distortion_coeff = np.concatenate([radial_distortion[0], tangential_distortion[0]])
+                elif radial_distortion[0].shape[0] == 3:
+                    distortion_coeff = np.concatenate(
+                        [
+                            radial_distortion[0][:2],
+                            tangential_distortion[0],
+                            np.array(
+                                [radial_distortion[0][2]]
+                            )
+                        ]
+                    )
+
+                # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
+                origin_point, x0, y0 = define_XYZ_coordinate_system(
+                    rvec=rvec, tvec=tvec, intrinsicK=K, distortion_coeff=distortion_coeff
+                )
+
+                # Draw arrows to show X and Y axes
+                draw_XY_arrows(
+                    origin_point=origin_point,
+                    x0=x0,
+                    y0=y0,
+                    magnification_factor=magnification_factor,
+                    head_width=head_width,
+                    head_length=head_length,
+                )
 
             print(f"{img_file_list[idx_file].name} | Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
 
