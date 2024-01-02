@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from pathlib import Path
 from PIL import Image
-
+from visualization.checkerboard import show_cb_image_with_detected_corners, draw_XY_arrows
+from algorithm.general.feature_analysis import define_XYZ_coordinate_system
 
 def calibrate_with_matlab(config: dict, img_file_list: list):
     """
@@ -48,19 +49,43 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
         print(f"  Tangential distortion p: {tangential_distortion}\n")
         print("- Extrinsic parameters")
 
+        # Arrow setting for visualization
+        magnification_factor = 30
+        head_width = 15
+        head_length = 10
+
         for idx_file in range(num_img_files):
 
             if config["checkerboard"]["show_figure"]:
                 plt.figure()
 
                 img = np.array(Image.open(img_file_list[idx_file]))
-                plt.imshow(img)
-                plt.title(img_file_list[idx_file].name)
 
-                for idx_points in range(points2d.shape[0]):
-                    plt.plot(points2d[idx_points, 0, idx_file], points2d[idx_points, 1, idx_file], "b.")
+                show_cb_image_with_detected_corners(
+                    img=img, detected_points=points2d[:, :, idx_file], figure_title=img_file_list[idx_file].name
+                )
 
-                plt.plot(points2d[0, 0, idx_file], points2d[0, 1, idx_file], "ro")
+                rvec = np.array(
+                    eng.rotmat2vec3d(
+                        matlab.double(A[0, idx_file][:3, :3].tolist())
+                    )
+                )
+                tvec = A[0, idx_file][:3, 3]
+
+                # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
+                origin_point, x0, y0 = define_XYZ_coordinate_system(
+                    rvec=rvec, tvec=tvec, intrinsicK=K, distortion_coeff=None
+                )
+
+                # Draw arrows to show X and Y axes
+                draw_XY_arrows(
+                    origin_point=origin_point,
+                    x0=x0,
+                    y0=y0,
+                    magnification_factor=magnification_factor,
+                    head_width=head_width,
+                    head_length=head_length,
+                )
 
             print(f"{img_file_list[idx_file].name} | Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
 
