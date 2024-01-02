@@ -72,9 +72,23 @@ def calibrate_with_matlab(config: dict, img_file_list: list):
                 )
                 tvec = A[0, idx_file][:3, 3]
 
+                # Prepare distortion coefficients in the format of OpenCV (k1 k2 p1 p2 k3 k4 ...)
+                if radial_distortion[0].shape[0] == 2:  # MATLAB's default
+                    distortion_coeff = np.concatenate([radial_distortion[0], tangential_distortion[0]])
+                elif radial_distortion[0].shape[0] == 3:
+                    distortion_coeff = np.concatenate(
+                        [
+                            radial_distortion[0][:2],
+                            tangential_distortion[0],
+                            np.array(
+                                [radial_distortion[0][2]]
+                            )
+                        ]
+                    )
+
                 # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
                 origin_point, x0, y0 = define_XYZ_coordinate_system(
-                    rvec=rvec, tvec=tvec, intrinsicK=K, distortion_coeff=None
+                    rvec=rvec, tvec=tvec, intrinsicK=K, distortion_coeff=distortion_coeff
                 )
 
                 # Draw arrows to show X and Y axes
