@@ -56,8 +56,14 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
     # eig_val, eig_vec = np.linalg.eig(V.T @ V)
     # b = eig_vec[:, np.argmin(eig_val)]  # Eq.6
 
+    if not config["zhang2000"]["get_skewness"]:
+        V=V[:, [0, 2, 3, 4, 5]]
+
     u, s, v = np.linalg.svd(V)
-    b = v[np.argmin(s), :]
+    b = v[np.argmin(s), :]  # b = [B11, B12, B22, B13, B23, B33]
+
+    if not config["zhang2000"]["get_skewness"]:
+        b = np.insert(b, 1, 0)  # B11, B12=0, B22, B13, B23, B33
 
     # Equations in the Section 3.1
     # (B_12 * B_13 - B_11 * B_23) / (B_11 * B22 - B_12 ** 2)

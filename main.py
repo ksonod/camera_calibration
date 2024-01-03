@@ -23,8 +23,11 @@ CONFIG = {
     "checkerboard": {
         "num_corners": (8, 5),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 25,  # mm (millimeter)
-        "show_figure": False,
+        "show_figure": True,
     },
+    "zhang2000": {
+        "get_skewness": False  # gamma in an intrinsic matrix Eq. (1)
+    }
 }
 
 
