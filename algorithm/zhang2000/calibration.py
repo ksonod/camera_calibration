@@ -2,25 +2,29 @@ import numpy as np
 import cv2 as cv
 from PIL import Image
 import matplotlib.pyplot as plt
-from algorithm.general.feature_analysis import detect_corners, create_3d_point_of_checker_corners, define_XYZ_coordinate_system
+from algorithm.general.feature_analysis import detect_corners, define_XYZ_coordinate_system
 from algorithm.zhang2000.math import vij
 from visualization.checkerboard import show_cb_image_with_detected_corners, draw_XY_arrows
 
+
 def calibrate_with_zhang_method(config: dict, img_file_list: list):
+    """
+    Z. Zhang, “A Flexible New Technique for Camera Calibration.” IEEE Transactions on Pattern Analysis and Machine
+    Intelligence. vol. 22, no. 11, pp. 1330–1334, 2000.
 
+    Zhang's calibration method is implemented by referring to the aforementioned paper.
+
+    :param config: config dictionary
+    :param img_file_list: a list of input image files
+    """
     num_img_data = len(img_file_list)
-
-    # corners3d = create_3d_point_of_checker_corners(
-    #     checker_shape=config["checkerboard"]["num_corners"],
-    #     checker_size=config["checkerboard"]["checker_size"]
-    # )
 
     corners3d = np.zeros(
         (np.prod(config["checkerboard"]["num_corners"]), 3)
     ).astype(np.float32)  # Object points in 3D
     corners3d[:, :2] = np.mgrid[
-                        0:config["checkerboard"]["num_corners"][0],
-                        0:config["checkerboard"]["num_corners"][1]
+                            0:config["checkerboard"]["num_corners"][0],
+                            0:config["checkerboard"]["num_corners"][1]
                        ].T.reshape(-1, 2) * config["checkerboard"]["checker_size"]  # Z values are always 0.
 
     V = np.zeros((2 * num_img_data, 6))  # V matrix in Eq. 9
@@ -48,18 +52,36 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
         V[2 * idx, :] = vij(h, 0, 1).T
         V[(2 * idx + 1), :] = (vij(h, 0, 0) - vij(h, 1, 1)).T
 
+    # This commented-out block is described in the paper. Alternatively, using SVD is also suggested.
     # eig_val, eig_vec = np.linalg.eig(V.T @ V)
     # b = eig_vec[:, np.argmin(eig_val)]  # Eq.6
+
     u, s, v = np.linalg.svd(V)
     b = v[np.argmin(s), :]
 
     # Equations in the Section 3.1
+    # (B_12 * B_13 - B_11 * B_23) / (B_11 * B22 - B_12 ** 2)
     v0 = (b[1] * b[3] - b[0] * b[4]) / (b[0] * b[2] - b[1] ** 2)
+
+    # lambda = B_33 - [B_13 ** 2 + v0 * (B_12 * B_13 - B_11 * B_23)] / B_11
     l = b[5] - (b[3] ** 2 + v0 * (b[1] * b[3] - b[0] * b[4])) / b[0]
+
+    # alpha = sqrt(lambda / B_11)
     alpha = np.sqrt(l / b[0])
+
+    # beta = sqrt(lambda * B_11 / (B_11 * B_22 - B_12 ** 2) )
     beta = np.sqrt(l * b[0] / (b[0] * b[2] - b[1] ** 2))
+
+    # gamma = - B_12 * alpha ** 2 * beta / lambda
     gamma = - b[1] * alpha ** 2 * beta / l
-    u0 = gamma * v0 / alpha - b[3] * alpha ** 2 / l
+
+    # The equation for u0 is incorrectly written in the original paper:
+    #  Z. Zhang, “A Flexible New Technique for Camera Calibration.” IEEE Transactions on Pattern Analysis and Machine
+    #  Intelligence. vol. 22, no. 11, pp. 1330–1334, 2000.
+    # A correct formula can be found in:
+    # https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr98-71.pdf [Accessed: Jan. 3, 2024]
+    # u0 = gamma * v0 / beta - B_13 * alpha ** 2 / lambda
+    u0 = gamma * v0 / beta - b[3] * alpha ** 2 / l
 
     # Eq. 1
     A = np.array([
@@ -79,24 +101,28 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
 
     reprojection_error = []
 
+    rvec_list = []
+    tvec_list = []
+    projected_points2d_list = []
+
     for i in range(num_img_data):
-        print(img_file_list[i])
         h = H[3 * i:3 * (i + 1), :]
         A_inv = np.linalg.inv(A)
         lm = 1 / np.linalg.norm(A_inv @ h[:, 0], ord=2)
         r1 = lm * A_inv @ h[:, 0]
         r2 = lm * A_inv @ h[:, 1]
         r3 = np.cross(r1, r2)
-        t = lm * A_inv @ h[:, 2]
+        tvec = lm * A_inv @ h[:, 2]
 
         R = np.stack([r1, r2, r3]).T
-        Rt = np.concatenate([R, t.reshape(3, 1)], axis=1)
+        Rt = np.concatenate([R, tvec.reshape(3, 1)], axis=1)
         rvec = cv.Rodrigues(R)[0].flatten()
-
         projected_points2d, _ = cv.projectPoints(
-            objectPoints=points3d[i], rvec=rvec, tvec=t, cameraMatrix=A, distCoeffs=None
+            objectPoints=points3d[i], rvec=rvec, tvec=tvec, cameraMatrix=A, distCoeffs=None
         )
-
+        projected_points2d_list.append(projected_points2d)
+        rvec_list.append(rvec)
+        tvec_list.append(tvec)
         err = np.squeeze(projected_points2d) - points2d[i]
 
         # averaged over all the corners detected in a single image
@@ -118,7 +144,7 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
 
             # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
             origin_point, x0, y0 = define_XYZ_coordinate_system(
-                rvec=rvec, tvec=t, intrinsicK=A, distortion_coeff=None
+                rvec=rvec, tvec=tvec, intrinsicK=A, distortion_coeff=None
             )
 
             draw_XY_arrows(
@@ -129,6 +155,9 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
                 head_width=head_width,
                 head_length=head_length,
             )
+
+    print("- Mean reprojection error")
+    print(f" Overall: {np.mean(reprojection_error):.5f}")  # Averaging reprojection errors over all images
 
     plt.figure()
     plt.bar(
