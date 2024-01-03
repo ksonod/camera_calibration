@@ -4,10 +4,6 @@ from typing import Tuple
 
 
 def create_3d_point_of_checker_corners(checker_shape: Tuple, checker_size: float) -> np.ndarray:
-    """
-    Order of points is aligned with OpenCV checker detection.
-
-    """
 
     x = np.arange(0, checker_shape[1], 1)
     y = np.arange(checker_shape[0], 0, -1) - 1
@@ -19,12 +15,10 @@ def create_3d_point_of_checker_corners(checker_shape: Tuple, checker_size: float
         ], axis=1
     ) * checker_size
 
-    return corners3d
+    return corners3d.astype(np.float32)
 
 
-def detect_corners(
-        input_gray_img: np.ndarray, checker_shape: Tuple, show_figure: bool
-) -> Tuple[np.ndarray, np.ndarray]:
+def detect_corners(input_gray_img: np.ndarray, checker_shape: Tuple) -> Tuple[np.ndarray, np.ndarray]:
     """
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
     """
@@ -39,20 +33,9 @@ def detect_corners(
 
     if detected:
         refined_corners = cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
-
-        if show_figure:
-            cv.drawChessboardCorners(
-                input_gray_img,
-                checker_shape,
-                refined_corners,
-                detected
-            )
-            cv.imshow("img", input_gray_img)
-            cv.waitKey()
-            cv.destroyAllWindows()
         return np.squeeze(refined_corners)
-
-
+    else:
+        return None
 def define_XYZ_coordinate_system(
         rvec: np.ndarray, tvec: np.ndarray, intrinsicK: np.ndarray, distortion_coeff: np.ndarray
 ):

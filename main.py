@@ -2,11 +2,13 @@ from pathlib import Path
 from enum import Enum
 from algorithm.opencv.calibration import calibrate_with_opencv
 from algorithm.matlab.calibration import calibrate_with_matlab
+from algorithm.zhang2000.calibration import calibrate_with_zhang_method
 
 
 class CalibMethod(Enum):
     OPENCV = "opencv"
     MATLAB = "matlab"
+    ZHANG2000 = "zhang2000"
 
 
 INPUT_FILES = {
@@ -15,13 +17,17 @@ INPUT_FILES = {
 
 CONFIG = {
     "input_file_format": ".jpg",
-    "calibration_method": CalibMethod.MATLAB,
+    "calibration_method": CalibMethod.ZHANG2000,
     # "calibration_method": CalibMethod.OPENCV,
+    # "calibration_method": CalibMethod.MATLAB,
     "checkerboard": {
         "num_corners": (8, 5),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 25,  # mm (millimeter)
         "show_figure": True,
     },
+    "zhang2000": {
+        "get_skewness": False  # gamma in an intrinsic matrix Eq. (1)
+    }
 }
 
 
@@ -36,6 +42,8 @@ def run_scripts(input_files: dict, config: dict):
         calibrate_with_opencv(config, img_file_list)
     elif config["calibration_method"] == CalibMethod.MATLAB:
         calibrate_with_matlab(config, img_file_list)
+    elif config["calibration_method"] == CalibMethod.ZHANG2000:
+        calibrate_with_zhang_method(config, img_file_list)
     else:
         raise NotImplementedError("Select a right calibration method.")
 
