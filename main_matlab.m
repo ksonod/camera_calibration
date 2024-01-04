@@ -6,7 +6,7 @@
 
 
 %% Define checkerboard size
-squareSize = 21.5;  % mm
+squareSize = 25;  % mm
 
 %% Define images to process
 

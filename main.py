@@ -26,7 +26,7 @@ CONFIG = {
         "show_figure": True,
     },
     "zhang2000": {
-        "get_skewness": False  # gamma in an intrinsic matrix Eq. (1)
+        "get_skewness": False  # gamma in an intrinsic matrix [[alpha, gamma, u0], [0, beta, v0], [0, 0, 1]]
     }
 }
 
