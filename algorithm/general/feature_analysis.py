@@ -3,29 +3,6 @@ import numpy as np
 from typing import Tuple
 
 
-def create_3d_point_of_checker_corners(checker_shape: Tuple, checker_size: float) -> np.ndarray:
-
-    world_points3d = np.zeros(
-        (np.prod(checker_shape), 3)
-    ).astype(np.float32)  # Object points in 3D
-    world_points3d[:, :2] = np.mgrid[
-                            0:checker_shape[0],
-                            0:checker_shape[1]
-                       ].T.reshape(-1, 2) * checker_size  # Z values are always 0.
-
-    # x = np.arange(0, checker_shape[1], 1)
-    # y = np.arange(checker_shape[0], 0, -1) - 1
-    #
-    # corners3d = np.stack(
-    #     [
-    #         np.tile(y, checker_shape[1]),
-    #         np.repeat(x, checker_shape[0])
-    #     ], axis=1
-    # ) * checker_size
-
-    return world_points3d.astype(np.float32)
-
-
 def detect_corners(
         input_gray_img: np.ndarray,
         checker_shape: Tuple,
