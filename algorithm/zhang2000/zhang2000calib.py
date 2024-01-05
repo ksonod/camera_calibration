@@ -121,7 +121,7 @@ class Zhang2000Calib(CameraCalib):
         optimized_params = least_squares(
             fun=self.loss,
             x0=initial_params,
-            args=(projected_points2d_original_list, self.get_skewness, param_scale)
+            args=(self.points2d, self.get_skewness, param_scale)
         )
 
         updated_params = optimized_params.x * param_scale
@@ -339,8 +339,7 @@ class Zhang2000Calib(CameraCalib):
         rvec = cv.Rodrigues(R)[0].flatten()
         return Rt, rvec, tvec
 
-    def loss(self, params: list, points2d, gamma_available, param_scale) -> np.ndarray:
-
+    def loss(self, params: List, points2d: List, gamma_available: bool, param_scale: np.ndarray) -> np.ndarray:
         params = np.array(params) * param_scale
 
         if gamma_available:
