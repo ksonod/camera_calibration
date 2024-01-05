@@ -14,7 +14,6 @@ class CameraCalib:
     def __init__(self, config: dict, img_file_list: list):
         self.checker_shape = config["checkerboard"]["num_corners"]
         self.checker_size = config["checkerboard"]["checker_size"]
-        self.get_skewness = config["zhang2000"]["get_skewness"]
         self.num_img_data = len(img_file_list)
         self.img_file_list = img_file_list
         self.points2d = []  # Detected checkerboard corners in the 2D image plane
@@ -42,3 +41,10 @@ class CameraCalib:
         # ) * checker_size
 
         return world_points3d.astype(np.float32)
+
+    @staticmethod
+    def calculate_reprojection_error(reference_points2d: np.ndarray, projected_points2d: np.ndarray):
+        err = np.squeeze(reference_points2d) - np.squeeze(projected_points2d)
+        return np.mean(
+                    np.sqrt(err[:, 0] ** 2 + err[:, 1] ** 2)
+               )

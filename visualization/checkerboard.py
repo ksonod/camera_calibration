@@ -2,13 +2,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def show_cb_image_with_detected_corners(img: np.ndarray, detected_points: np.ndarray, figure_title: str):
+def show_cb_image_with_detected_corners(
+        img: np.ndarray, detected_points: np.ndarray, figure_title: str, marker_style=".", marker_color="green"
+):
     """
     This function shows a checkerboard image with detected points.
 
     :param img: image (gray or color).
     :param detected_points: Numpy array with the dimension of [number of detected points] x 2.
     :param figure_title: figure tile to be visualized.
+    :param: marker_style: marker for showing detected checker corners.
+    :param: marker_color: marker color
     """
 
     plt.imshow(img)
@@ -16,7 +20,10 @@ def show_cb_image_with_detected_corners(img: np.ndarray, detected_points: np.nda
         plt.title(figure_title)
 
     for idx_points in range(detected_points.shape[0]):
-        plt.plot(detected_points[idx_points, 0], detected_points[idx_points, 1], "b.")
+        plt.plot(
+            detected_points[idx_points, 0], detected_points[idx_points, 1],
+            marker=marker_style, color=marker_color
+        )
 
 
 def draw_XY_arrows(
