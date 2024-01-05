@@ -26,6 +26,7 @@ def detect_corners(
     else:
         return None
 
+
 def define_XYZ_coordinate_system(
         rvec: np.ndarray, tvec: np.ndarray, intrinsicK: np.ndarray, distortion_coeff: np.ndarray
 ):

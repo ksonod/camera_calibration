@@ -174,7 +174,8 @@ class Zhang2000Calib(CameraCalib):
                              projected_points2d_original_list[i][idx_points, 0, 1],
                              marker=".", color="blue")
                     if self.optimize_parameters:
-                        plt.plot(new_projected_points2d[idx_points, 0, 0], new_projected_points2d[idx_points, 0, 1],
+                        plt.plot(new_projected_points2d[idx_points, 0, 0],
+                                 new_projected_points2d[idx_points, 0, 1],
                                  marker=".", color="red")
 
                 # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
@@ -190,7 +191,6 @@ class Zhang2000Calib(CameraCalib):
                     head_width=head_width,
                     head_length=head_length,
                 )
-
 
         # Show final results (reprojection errors)
         print("- Mean reprojection error")
@@ -261,12 +261,18 @@ class Zhang2000Calib(CameraCalib):
         return V, H
 
     def get_b_vector(self, V: np.ndarray) -> np.ndarray:
-        u, s, v = np.linalg.svd(V)
-        b = v[np.argmin(s), :]  # b = [B11, B12, B22, B13, B23, B33]
+        """
+        Get b vector in Eq. 6 of [1].
+        :param V: V matrix in Eq. 9 of [1]
+        :return: 6D b vector: b = [B11, B12, B22, B13, B23, B33]
+        """
 
-        # This commented-out block is described in the paper. Alternatively, using SVD is also suggested.
+        # This commented-out block is described in the paper [1]. Alternatively, using SVD is also suggested.
         # eig_val, eig_vec = np.linalg.eig(V.T @ V)
         # b = eig_vec[:, np.argmin(eig_val)]  # Eq.6
+
+        u, s, v = np.linalg.svd(V)
+        b = v[np.argmin(s), :]
 
         if not self.get_skewness:
             b = np.insert(arr=b, obj=1, values=0)  # B11, B12=0, B22, B13, B23, B33
@@ -276,10 +282,10 @@ class Zhang2000Calib(CameraCalib):
     @staticmethod
     def get_intrinsic_params(b: np.ndarray) -> np.ndarray:
         """
-        Equations in the Section 3.1 are used to calculate intrinsic parameters from the 6D vector b.
+        Equations in the Section 3.1 of [1] are used to calculate intrinsic parameters from the 6D vector b.
 
         :param b: 6D vector b is defined in Eq. 6
-        :return:
+        :return: 3x3 Intrinsics matrix
         """
         # (B_12 * B_13 - B_11 * B_23) / (B_11 * B22 - B_12 ** 2)
         v0 = (b[1] * b[3] - b[0] * b[4]) / (b[0] * b[2] - b[1] ** 2)
@@ -296,15 +302,15 @@ class Zhang2000Calib(CameraCalib):
         # gamma = - B_12 * alpha ** 2 * beta / lambda
         gamma = - b[1] * alpha ** 2 * beta / l
 
-        # The equation for u0 is incorrectly written in the original paper:
+        # The equation for u0 is incorrectly written in the original paper [1]:
         #  Z. Zhang, “A Flexible New Technique for Camera Calibration.” IEEE Transactions on Pattern Analysis and Machine
         #  Intelligence. vol. 22, no. 11, pp. 1330–1334, 2000.
-        # A correct formula can be found in:
+        # A correct formula can be found in [2]:
         # https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr98-71.pdf [Accessed: Jan. 3, 2024]
         # u0 = gamma * v0 / beta - B_13 * alpha ** 2 / lambda
         u0 = gamma * v0 / beta - b[3] * alpha ** 2 / l
 
-        # Eq. 1
+        # Intrinsic matrix given by Eq. 1 in [1]
         return np.array([
             [alpha, gamma, u0],
             [0, beta, v0],
@@ -315,6 +321,15 @@ class Zhang2000Calib(CameraCalib):
     def get_rvec_and_tvec(
             H: np.ndarray, A: np.ndarray, idx: int
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Get extrinsic parameters (rvec: rotation vector. tvec: translation vector) using homography matrix H and
+        camera intrinsics matrix A
+        :param H: homography matrix
+        :param A: intrinsics matrix
+        :param idx: index to access data corresponding to a right image.
+        :return: 3x4 Extrinsics matrix Rt, rotation vector rvec, and translation vector tvec
+        """
+
         h = H[3 * idx:3 * (idx + 1), :]
         A_inv = np.linalg.inv(A)
         lm = 1 / np.linalg.norm(A_inv @ h[:, 0], ord=2)
@@ -328,8 +343,21 @@ class Zhang2000Calib(CameraCalib):
         rvec = cv.Rodrigues(R)[0].flatten()
         return Rt, rvec, tvec
 
-    def loss(self, params: List, points2d: List, gamma_available: bool, param_scale: np.ndarray) -> np.ndarray:
-        params = np.array(params) * param_scale
+    def loss(
+            self, normalized_params: List, points2d: List, gamma_available: bool, param_scale: np.ndarray
+    ) -> np.ndarray:
+        """
+        Loss function to be minimized to get opmized camera parameters.
+
+        :param params: flattened list of parameters [intrinsics (6 or 7 elements), extrinsics (flattened rotation
+        vectors followed by flattend translation vectors)]
+        :param points2d: checkerboard corners that serve as a target
+        :param gamma_available: availability of the gamma (skewness) parameter
+        :param param_scale: initial parameter values determined using a closed-form equations.
+        :return: loss value (squared value of summed reprojection error)
+        """
+
+        params = np.array(normalized_params) * param_scale  # Get parameters in a right scale.
 
         if gamma_available:
             alpha, beta, gamma, u0, v0, k1, k2 = params[:7]
@@ -369,10 +397,22 @@ class Zhang2000Calib(CameraCalib):
             err = projected_points2d - np.squeeze(points2d[i])
             total_error += np.sum(err[:, 0] ** 2 + err[:, 1] ** 2)   # Mean and root are not necessary.
 
-        # print(f"error: {total_error} | params: alpha={alpha} - beta={beta} - gamma={gamma} - u0={u0} - v0={v0} - k1={k1} - k2={k2}")
         return total_error.astype(np.float32)
 
-    def optimize_params(self, A, k1, k2, rvec_list, tvec_list):
+    def optimize_params(
+            self, A: np.ndarray, k1: float, k2: float, rvec_list: List, tvec_list: List
+    ) -> Tuple[np.ndarray, int]:
+        """
+        Following the Section 3.2 in [1], parameters are optimized by minimizing reprojection errors for all points in
+        all images. See Eq. 10 of [1].
+
+        :param A: Initial 3x3 intrinsics matrix.
+        :param k1: Initial first radial distortion parameter.
+        :param k2: Initial second radial distortion parameter.
+        :param rvec_list: a list of initial rotation vectors.
+        :param tvec_list: a list of initial translation vectors.
+        :return: updated parameters
+        """
 
         alpha, beta, gamma, u0, v0 = A[0, 0], A[1, 1], A[0, 1], A[0, 2], A[1, 2]  # Eq 1 in [1]
 
