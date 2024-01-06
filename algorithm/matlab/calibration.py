@@ -54,7 +54,15 @@ class MatlabCalib(CameraCalib):
 
             print("*.mat files exist. Start loading and processing data.")
 
-            A, K, radial_distortion, tangential_distortion, reprojection_error, points2d = load_mat_files(data_folder)
+            (
+                A,
+                K,
+                radial_distortion,
+                tangential_distortion,
+                reprojection_error,
+                reprojected_points,
+                points2d
+            ) = self.load_mat_files(data_folder)
 
             absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :] ** 2 + reprojection_error[:, 1, :] ** 2)
 
@@ -85,6 +93,11 @@ class MatlabCalib(CameraCalib):
                         img=img, detected_points=points2d[:, :, idx_file],
                         figure_title=self.img_file_list[idx_file].name,
                         marker_style="x", marker_color="yellow", label="Detected corners"
+                    )
+                    plt.plot(
+                        reprojected_points[:, 0, idx_file],
+                        reprojected_points[:, 1, idx_file],
+                        marker=".", color="blue", linestyle='None', label="Reprojection"
                     )
                     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
                     plt.tight_layout()
@@ -159,31 +172,35 @@ class MatlabCalib(CameraCalib):
 
         eng.quit()  # Terminate the MATLAB engine.
 
+    @staticmethod
+    def load_mat_files(data_folder):
 
-def load_mat_files(data_folder):
+        # Get extrinsics parameters (3 x 4 matrix [R | t])
+        a = loadmat(data_folder / "extrinsicsA.mat")
+        A = a['A']
 
-    # Get extrinsics parameters (3 x 4 matrix [R | t])
-    a = loadmat(data_folder / "extrinsicsA.mat")
-    A = a['A']
+        # Get intrinsics parameters (3 x 3 matrix)
+        k = loadmat(data_folder / "intrinsicsK.mat")
+        K = k["K"]
 
-    # Get intrinsics parameters (3 x 3 matrix)
-    k = loadmat(data_folder / "intrinsicsK.mat")
-    K = k["K"]
+        # Get radial distortion parameters
+        rd = loadmat(data_folder / "radialDistortion.mat")
+        radial_distortion = rd["rd"]
 
-    # Get radial distortion parameters
-    rd = loadmat(data_folder / "radialDistortion.mat")
-    radial_distortion = rd["rd"]
+        # Get tangential distortion parameters
+        td = loadmat(data_folder / "tangentialDistortion.mat")
+        tangential_distortion = td["td"]
 
-    # Get tangential distortion parameters
-    td = loadmat(data_folder / "tangentialDistortion.mat")
-    tangential_distortion = td["td"]
+        # Get reprojection errors
+        re = loadmat(data_folder / "reprojectionError.mat")
+        reprojection_error = re["re"]  # [number of detected points in a single image] x 2 x [number of images]
 
-    # Get reprojection errors
-    re = loadmat(data_folder / "reprojectionError.mat")
-    reprojection_error = re["re"]  # [number of detected points in a single image] x 2 x [number of images]
+        # Get reprojected points
+        rp = loadmat(data_folder / "reprojectedPoints.mat")
+        reprojected_points = rp["rp"]  # [number of detected points in a single image] x 2 x [number of images]
 
-    # Get detected corners in 2D
-    dp = loadmat(data_folder / "imagePoints.mat")
-    points2d = dp["imagePoints"]  # [number of detected points in a single image] x 2 x [number of images]
+        # Get detected corners in 2D
+        dp = loadmat(data_folder / "imagePoints.mat")
+        points2d = dp["imagePoints"]  # [number of detected points in a single image] x 2 x [number of images]
 
-    return A, K, radial_distortion, tangential_distortion, reprojection_error, points2d
+        return A, K, radial_distortion, tangential_distortion, reprojection_error, reprojected_points, points2d
