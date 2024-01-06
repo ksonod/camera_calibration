@@ -3,27 +3,15 @@ import numpy as np
 from typing import Tuple
 
 
-def create_3d_point_of_checker_corners(checker_shape: Tuple, checker_size: float) -> np.ndarray:
-
-    x = np.arange(0, checker_shape[1], 1)
-    y = np.arange(checker_shape[0], 0, -1) - 1
-
-    corners3d = np.stack(
-        [
-            np.tile(y, checker_shape[1]),
-            np.repeat(x, checker_shape[0])
-        ], axis=1
-    ) * checker_size
-
-    return corners3d.astype(np.float32)
-
-
-def detect_corners(input_gray_img: np.ndarray, checker_shape: Tuple) -> Tuple[np.ndarray, np.ndarray]:
+def detect_corners(
+        input_gray_img: np.ndarray,
+        checker_shape: Tuple,
+        criteria=(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+) -> Tuple[bool, np.ndarray]:
     """
+    Detect checkerboard corners and get subpixel coordinates.
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
     """
-
-    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
 
     detected, corners = cv.findChessboardCorners(
         input_gray_img,
@@ -31,11 +19,15 @@ def detect_corners(input_gray_img: np.ndarray, checker_shape: Tuple) -> Tuple[np
         None
     )
 
-    if detected:
-        refined_corners = cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
-        return np.squeeze(refined_corners)
+    if detected and (np.prod(checker_shape) == corners.shape[0]):  # All corners should be detected.
+        refined_corners = np.squeeze(
+            cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
+        )
     else:
-        return None
+        refined_corners = None
+    return detected, refined_corners
+
+
 def define_XYZ_coordinate_system(
         rvec: np.ndarray, tvec: np.ndarray, intrinsicK: np.ndarray, distortion_coeff: np.ndarray
 ):
