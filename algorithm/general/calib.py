@@ -10,13 +10,13 @@ class CalibMethod(Enum):
 
 
 class CameraCalib:
-    checker_shape: Tuple
-    checker_size: float
-    get_skewness: bool
-    num_img_data: int
-    img_file_list: List
-    points2d: List
-    points3d: np.ndarray
+    checker_shape: Tuple  # Checkerboard shape: ([numbers of corners per column], [number of corners per row])
+    checker_size: float  # Size of one square in a checkerboard in mm.
+    get_skewness: bool  # Boolean for getting skewness (gamma) in an intrinsics matrix
+    num_img_data: int  # Number of image data
+    img_file_list: List  # Image file list
+    points2d: List   # Detected checkerboard corners in the 2D image plane
+    points3d: np.ndarray   # Corresponding 3D points in space
 
     def __init__(self, config: dict, img_file_list: list):
         self.num_img_data = len(img_file_list)
@@ -29,8 +29,8 @@ class CameraCalib:
         self.img_file_list = img_file_list
         self.checker_shape = config["checkerboard"]["num_corners"]
         self.checker_size = config["checkerboard"]["checker_size"]
-        self.points2d = []  # Detected checkerboard corners in the 2D image plane
-        self.points3d = self.create_3d_point_of_checker_corners()  # Corresponding 3D points in space
+        self.points2d = []
+        self.points3d = self.create_3d_point_of_checker_corners()
         self.show_figure = config["checkerboard"]["show_figure"]
 
     def create_3d_point_of_checker_corners(self) -> np.ndarray:

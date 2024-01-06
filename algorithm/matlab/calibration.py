@@ -83,8 +83,11 @@ class MatlabCalib(CameraCalib):
 
                     show_cb_image_with_detected_corners(
                         img=img, detected_points=points2d[:, :, idx_file],
-                        figure_title=self.img_file_list[idx_file].name
+                        figure_title=self.img_file_list[idx_file].name,
+                        marker_style="x", marker_color="yellow", label="Detected corners"
                     )
+                    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                    plt.tight_layout()
 
                     rvec = np.array(
                         eng.rotmat2vec3d(

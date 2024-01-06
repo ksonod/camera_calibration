@@ -25,7 +25,11 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
 
 class Zhang2000Calib(CameraCalib):
     """
-    Zhang's calibration method is implemented by referring to papers [1, 2].
+    Zhang's calibration method is implemented by referring to papers [1, 2]. It consists of two blockes. The first block
+    is to get camera extrinsics (rotation and translation) and intrinsics including skewness (gamma) and radial
+    distortion (k1, k2) together with reprojection error. For this purpose, the closed form solutions of set of
+    equations can be used as described in [1, 2]. The second block is to optimize all the parameters by minimizing the
+    reprojection error further.
 
     [1] Z. Zhang, “A Flexible New Technique for Camera Calibration.” IEEE Transactions on Pattern Analysis and Machine
     Intelligence. vol. 22, no. 11, pp. 1330–1334, 2000.
@@ -177,20 +181,25 @@ class Zhang2000Calib(CameraCalib):
                 )
 
             if self.show_figure:
-
                 plt.figure()
                 show_cb_image_with_detected_corners(
                     img=img, detected_points=self.points2d[i], figure_title=f"{self.img_file_list[i].name}",
-                    marker_style="x", marker_color="yellow"
+                    marker_style="x", marker_color="yellow", label="Detected corners"
                 )
-                for idx_points in range(projected_points2d_original_list[i].shape[0]):
-                    plt.plot(projected_points2d_original_list[i][idx_points, 0, 0],
-                             projected_points2d_original_list[i][idx_points, 0, 1],
-                             marker=".", color="blue")
-                    if self.optimize_parameters:
-                        plt.plot(new_projected_points2d[idx_points, 0, 0],
-                                 new_projected_points2d[idx_points, 0, 1],
-                                 marker=".", color="red")
+                plt.plot(
+                    projected_points2d_original_list[i][:, 0, 0],
+                    projected_points2d_original_list[i][:, 0, 1],
+                    marker=".", color="blue", linestyle='None', label="Initial projection"
+                )
+                if self.optimize_parameters:
+                    plt.plot(
+                        new_projected_points2d[:, 0, 0],
+                        new_projected_points2d[:, 0, 1],
+                        marker=".", color="red", linestyle='None', label="Optimized projection"
+                    )
+
+                plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+                plt.tight_layout()
 
                 # Set an origin (X, Y, Z) = (0, 0, 0) and unit vectors in X and Y directions.
                 origin_point, x0, y0 = define_XYZ_coordinate_system(
@@ -208,20 +217,38 @@ class Zhang2000Calib(CameraCalib):
 
         # Show final results (reprojection errors)
         print("- Mean reprojection error")
-        print(f" Without optimization: {np.mean(reprojection_error):.5f}")  # Averaging reprojection errors over all images and points
 
-        plt.figure()
-        plt.bar(np.arange(self.num_img_data), reprojection_error, color="blue", alpha=0.5)
+        # Averaging reprojection errors over all images and points
+        print(f" Without optimization: {np.mean(reprojection_error):.5f}")
+
+        # Show reprojection error as a figure.
+        plt.figure(figsize=(8, 4))
+        plt.bar(
+            np.arange(self.num_img_data), reprojection_error,
+            color="blue", alpha=0.5, label="W/o optimization"
+        )
+        plt.plot(
+            [-0.6, self.num_img_data - 0.3], np.mean(reprojection_error) * np.ones(2),
+            "b--", alpha=0.5
+        )
         if self.optimize_parameters:
             print(" With optimization: ", np.mean(reprojection_error_new))
-            plt.bar(np.arange(self.num_img_data) + 0.1, reprojection_error_new, color="red", alpha=0.5)
-            plt.plot([-0.6, self.num_img_data - 0.3], np.mean(reprojection_error_new) * np.ones(2), "r--", alpha=0.5)
+            plt.bar(
+                np.arange(self.num_img_data) + 0.1, reprojection_error_new,
+                color="red", alpha=0.5, label="Optimized"
+            )
+            plt.plot(
+                [-0.6, self.num_img_data - 0.3], np.mean(reprojection_error_new) * np.ones(2),
+                "r--", alpha=0.5
+            )
         else:
             print("The optimization step is skipped.")
-        plt.plot([-0.6, self.num_img_data - 0.3], np.mean(reprojection_error) * np.ones(2), "b--", alpha=0.5)
         plt.xlabel("Images")
         plt.ylabel("Mean reprojection error (pixels)")
         plt.xlim([-0.6, self.num_img_data-0.3])
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.tight_layout()
+
         plt.show()
 
     @staticmethod
@@ -256,10 +283,13 @@ class Zhang2000Calib(CameraCalib):
             if idx == 0:
                 print("Image shape:", img.shape)
 
-            detected_corners2d = detect_corners(
+            detected, detected_corners2d = detect_corners(
                 cv.cvtColor(img, cv.COLOR_RGB2GRAY),
                 self.checker_shape
             )
+
+            if not detected:
+                raise ValueError(f"Checkerboard corners are not detected in {img_file.name}")
 
             self.points2d.append(detected_corners2d)
 

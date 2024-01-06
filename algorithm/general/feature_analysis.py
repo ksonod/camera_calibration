@@ -6,12 +6,11 @@ from typing import Tuple
 def detect_corners(
         input_gray_img: np.ndarray,
         checker_shape: Tuple,
-        criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
-) -> Tuple[np.ndarray, np.ndarray]:
+        criteria=(cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.001)
+) -> Tuple[bool, np.ndarray]:
     """
     Detect checkerboard corners and get subpixel coordinates.
     https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
-
     """
 
     detected, corners = cv.findChessboardCorners(
@@ -21,10 +20,12 @@ def detect_corners(
     )
 
     if detected and (np.prod(checker_shape) == corners.shape[0]):  # All corners should be detected.
-        refined_corners = cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
-        return np.squeeze(refined_corners)
+        refined_corners = np.squeeze(
+            cv.cornerSubPix(input_gray_img, corners, (11, 11), (-1, -1), criteria)
+        )
     else:
-        return None
+        refined_corners = None
+    return detected, refined_corners
 
 
 def define_XYZ_coordinate_system(

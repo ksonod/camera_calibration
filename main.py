@@ -12,8 +12,8 @@ INPUT_FILES = {
 CONFIG = {
     "input_file_format": ".jpg",
     # "calibration_method": CalibMethod.ZHANG2000,
-    "calibration_method": CalibMethod.OPENCV,
-    # "calibration_method": CalibMethod.MATLAB,
+    # "calibration_method": CalibMethod.OPENCV,
+    "calibration_method": CalibMethod.MATLAB,
     "checkerboard": {
         "num_corners": (8, 5),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 25,  # mm (millimeter)
