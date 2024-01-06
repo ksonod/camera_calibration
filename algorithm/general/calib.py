@@ -1,5 +1,12 @@
 import numpy as np
 from typing import List, Tuple
+from enum import Enum
+
+
+class CalibMethod(Enum):
+    OPENCV = "opencv"
+    MATLAB = "matlab"
+    ZHANG2000 = "zhang2000"
 
 
 class CameraCalib:
@@ -12,10 +19,16 @@ class CameraCalib:
     points3d: np.ndarray
 
     def __init__(self, config: dict, img_file_list: list):
+        self.num_img_data = len(img_file_list)
+
+        if self.num_img_data == 0:
+            raise FileNotFoundError(
+                "No image files are found. Check directory name or image data type (jpg, png, and so on)"
+            )
+
+        self.img_file_list = img_file_list
         self.checker_shape = config["checkerboard"]["num_corners"]
         self.checker_size = config["checkerboard"]["checker_size"]
-        self.num_img_data = len(img_file_list)
-        self.img_file_list = img_file_list
         self.points2d = []  # Detected checkerboard corners in the 2D image plane
         self.points3d = self.create_3d_point_of_checker_corners()  # Corresponding 3D points in space
         self.show_figure = config["checkerboard"]["show_figure"]
@@ -43,7 +56,7 @@ class CameraCalib:
         return world_points3d.astype(np.float32)
 
     @staticmethod
-    def calculate_reprojection_error(reference_points2d: np.ndarray, projected_points2d: np.ndarray):
+    def calculate_reprojection_error(reference_points2d: np.ndarray, projected_points2d: np.ndarray) -> float:
         err = np.squeeze(reference_points2d) - np.squeeze(projected_points2d)
         return np.mean(
                     np.sqrt(err[:, 0] ** 2 + err[:, 1] ** 2)
