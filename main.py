@@ -19,16 +19,18 @@ CONFIG = {
         "checker_size": 25,  # mm (millimeter)
         "show_figure": True,
     },
-    "zhang2000": {
-        "get_skewness": False,  # gamma in an intrinsic matrix [[alpha, gamma, u0], [0, beta, v0], [0, 0, 1]]
-        "optimize_parameters": True
-    }
+    # "zhang2000": {  # Config for CalibMethod.ZHANG2000
+    #     "get_skewness": False,  # gamma in an intrinsic matrix [[alpha, gamma, u0], [0, beta, v0], [0, 0, 1]]
+    #     "optimize_parameters": True
+    # }
 }
 
 
 def run_scripts(input_files: dict, config: dict):
 
-    img_file_list = list(input_files["img_folder"].glob(f"*{config['input_file_format']}"))
+    img_file_list = list(
+        input_files["img_folder"].glob(f"*{config['input_file_format']}")
+    )
     img_file_list.sort()
 
     print(f"Calibration method: {config['calibration_method'].value}")

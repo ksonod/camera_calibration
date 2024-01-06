@@ -40,8 +40,20 @@ class Zhang2000Calib(CameraCalib):
 
     def __init__(self, config: dict, img_file_list: list):
         super().__init__(config, img_file_list)
-        self.get_skewness = config["zhang2000"]["get_skewness"]
-        self.optimize_parameters = config["zhang2000"]["optimize_parameters"]
+
+        if "zhang2000" in config:
+            if "get_skewness" in config["zhang2000"]:
+                self.get_skewness = config["zhang2000"]["get_skewness"]
+            else:
+                self.get_skewness = False
+
+            if "optimize_parameters" in config["zhang2000"]:
+                self.optimize_parameters = config["zhang2000"]["optimize_parameters"]
+            else:
+                self.optimize_parameters = True
+        else:
+            self.get_skewness = False
+            self.optimize_parameters = True
 
     def __call__(self):
 
