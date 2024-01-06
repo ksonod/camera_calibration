@@ -7,24 +7,25 @@ from algorithm.general.feature_analysis import define_XYZ_coordinate_system
 from algorithm.general.calib import CameraCalib
 
 
-def calibrate_with_opencv(config: dict, img_file_list: list):
+def calibrate_with_opencv(input_files: dict, config: dict):
+    """
+    Checkerboard detection and camera calibration are done using OpenCV. Camera extrinsics, intrinsics, and reprojection
+    errors can be obtained.
+    Reference: https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html  [Accessed: 05 Jan., 2024]
+    """
+    opencvcalib = OpenCVcalib(input_files, config)
+    opencvcalib()
+
+
+class OpenCVcalib(CameraCalib):
     """
     Checkerboard detection and camera calibration are done using OpenCV. Camera extrinsics, intrinsics, and reprojection
     errors can be obtained.
     Reference: https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html  [Accessed: 05 Jan., 2024]
     """
 
-    opencvcalib = OpenCVcalib(config, img_file_list)
-    opencvcalib()
-
-
-class OpenCVcalib(CameraCalib):
-    """
-    https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html
-    """
-
-    def __init__(self, config: dict, img_file_list: list):
-        super().__init__(config, img_file_list)
+    def __init__(self, input_files: dict, config: dict):
+        super().__init__(input_files, config)
 
     def __call__(self):
 

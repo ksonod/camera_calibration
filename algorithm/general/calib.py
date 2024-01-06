@@ -1,6 +1,7 @@
 import numpy as np
 from typing import List, Tuple
 from enum import Enum
+import os
 
 
 class CalibMethod(Enum):
@@ -10,6 +11,7 @@ class CalibMethod(Enum):
 
 
 class CameraCalib:
+    data_folder: os.PathLike
     checker_shape: Tuple  # Checkerboard shape: ([numbers of corners per column], [number of corners per row])
     checker_size: float  # Size of one square in a checkerboard in mm.
     get_skewness: bool  # Boolean for getting skewness (gamma) in an intrinsics matrix
@@ -18,15 +20,24 @@ class CameraCalib:
     points2d: List   # Detected checkerboard corners in the 2D image plane
     points3d: np.ndarray   # Corresponding 3D points in space
 
-    def __init__(self, config: dict, img_file_list: list):
-        self.num_img_data = len(img_file_list)
+    def __init__(self, input_files: dict, config: dict):
+
+        print(f"Calibration method: {config['calibration_method'].value}")
+
+        self.data_folder = input_files["img_folder"]
+
+        self.img_file_list = list(
+            input_files["img_folder"].glob(f"*{config['input_file_format']}")
+        )
+        self.img_file_list.sort()
+
+        self.num_img_data = len(self.img_file_list)
 
         if self.num_img_data == 0:
             raise FileNotFoundError(
                 "No image files are found. Check directory name or image data type (jpg, png, and so on)"
             )
 
-        self.img_file_list = img_file_list
         self.checker_shape = config["checkerboard"]["num_corners"]
         self.checker_size = config["checkerboard"]["checker_size"]
         self.points2d = []
@@ -57,6 +68,12 @@ class CameraCalib:
 
     @staticmethod
     def calculate_reprojection_error(reference_points2d: np.ndarray, projected_points2d: np.ndarray) -> float:
+        """
+        Compute reprojection error.
+        :param reference_points2d: Coordinates of detected checkerboard corners
+        :param projected_points2d: Coordinates of reprojected points
+        :return: reprojection error averaged over all the points.
+        """
         err = np.squeeze(reference_points2d) - np.squeeze(projected_points2d)
         return np.mean(
                     np.sqrt(err[:, 0] ** 2 + err[:, 1] ** 2)

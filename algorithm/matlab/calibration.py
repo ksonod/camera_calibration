@@ -8,12 +8,11 @@ from algorithm.general.feature_analysis import define_XYZ_coordinate_system
 from algorithm.general.calib import CameraCalib
 
 
-def calibrate_with_matlab(config: dict, img_file_list: list):
+def calibrate_with_matlab(input_files: dict, config: dict):
     """
     Tested with MATLAB R2023b + python 3.10
     """
-
-    matlabcalib = MatlabCalib(config, img_file_list)
+    matlabcalib = MatlabCalib(input_files, config)
     matlabcalib()
 
 
@@ -26,8 +25,8 @@ class MatlabCalib(CameraCalib):
     This was tested with MATLAB R2023b + python 3.10
     """
 
-    def __init__(self, config: dict, img_file_list: list):
-        super().__init__(config, img_file_list)
+    def __init__(self, input_files: dict, config: dict):
+        super().__init__(input_files, config)
 
     def __call__(self):
         import matlab.engine
@@ -48,9 +47,7 @@ class MatlabCalib(CameraCalib):
         except:
             print("MATLAB did not run successfully.")
 
-        data_folder = Path.cwd() / "data"  # Path to a directory containing generated *.mat files
-
-        if len(list(data_folder.glob("*.mat"))) != 0:
+        if len(list(self.data_folder.glob("*.mat"))) != 0:
 
             print("*.mat files exist. Start loading and processing data.")
 
@@ -62,7 +59,7 @@ class MatlabCalib(CameraCalib):
                 reprojection_error,
                 reprojected_points,
                 points2d
-            ) = self.load_mat_files(data_folder)
+            ) = self.load_mat_files(self.data_folder)
 
             absolute_reproject_err = np.sqrt(reprojection_error[:, 0, :] ** 2 + reprojection_error[:, 1, :] ** 2)
 
@@ -138,7 +135,8 @@ class MatlabCalib(CameraCalib):
                         head_length=head_length,
                     )
 
-                print(f"{self.img_file_list[idx_file].name} | Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
+                print(f"{self.img_file_list[idx_file].name} | "
+                      f"Reprojection error = {mean_abs_reproject_err[idx_file]:.5f}")
 
                 print(f"[R | t]: \n{A[0, idx_file][:3, :]}")
                 print(
@@ -155,7 +153,8 @@ class MatlabCalib(CameraCalib):
             print(f" Overall: {np.mean(absolute_reproject_err):.5f}")  # Averaging reprojection errors over all images
 
             print("**** WARNING ****")
-            print("MATLAB and python count array indices in a different way. Obtained parameters are not adjusted.")
+            print("MATLAB and python count array indices in a different way. "
+                  "Obtained parameters follow MATLAB conventions.")
 
             plt.figure()
             plt.bar(

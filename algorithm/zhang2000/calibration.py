@@ -9,7 +9,7 @@ from visualization.checkerboard import show_cb_image_with_detected_corners, draw
 from algorithm.general.calib import CameraCalib
 
 
-def calibrate_with_zhang_method(config: dict, img_file_list: list):
+def calibrate_with_zhang_method(input_files: dict, config: dict):
     """
     Zhang's calibration method is implemented by referring to this paper:
     Z. Zhang, “A Flexible New Technique for Camera Calibration.” IEEE Transactions on Pattern Analysis and Machine
@@ -18,8 +18,7 @@ def calibrate_with_zhang_method(config: dict, img_file_list: list):
     :param config: config dictionary
     :param img_file_list: a list of input image files
     """
-
-    calib = Zhang2000Calib(config, img_file_list)
+    calib = Zhang2000Calib(input_files, config)
     calib()
 
 
@@ -38,8 +37,8 @@ class Zhang2000Calib(CameraCalib):
     https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/tr98-71.pdf [Accessed: Jan. 5, 2024]
     """
 
-    def __init__(self, config: dict, img_file_list: list):
-        super().__init__(config, img_file_list)
+    def __init__(self, input_files: dict, config: dict):
+        super().__init__(input_files, config)
 
         if "zhang2000" in config:
             if "get_skewness" in config["zhang2000"]:
