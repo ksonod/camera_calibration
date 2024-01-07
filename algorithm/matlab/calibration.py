@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import loadmat
-from pathlib import Path
 from PIL import Image
 from visualization.checkerboard import show_cb_image_with_detected_corners, draw_XY_arrows
 from algorithm.general.feature_analysis import define_XYZ_coordinate_system
@@ -25,8 +24,32 @@ class MatlabCalib(CameraCalib):
     This was tested with MATLAB R2023b + python 3.10
     """
 
+    get_skewness: bool
+    get_tangential_distortion: bool
+    num_radial_distortion_coefs: int
+
     def __init__(self, input_files: dict, config: dict):
         super().__init__(input_files, config)
+
+        if "matlab" in config:
+            if "get_skewness" in config["matlab"]:
+                self.get_skewness = config["matlab"]["get_skewness"]
+            else:
+                self.get_skewness = False
+            if "get_tangential_distortion" in config["matlab"]:
+                self.get_tangential_distortion = config["matlab"]["get_tangential_distortion"]
+            else:
+                self.get_tangential_distortion = False
+            if "num_radial_distortion_coefs" in config["matlab"]:
+                self.num_radial_distortion_coefs = config["matlab"]["num_radial_distortion_coefs"]
+            else:
+                self.num_radial_distortion_coefs = 2
+        else:
+            self.get_skewness = False
+            self.get_tangential_distortion = False
+            self.num_radial_distortion_coefs = 2
+
+        self.matlab_success = True
 
     def __call__(self):
         import matlab.engine
@@ -43,13 +66,21 @@ class MatlabCalib(CameraCalib):
         # Run matlab script for calibration and save calibration data in .mat files in ./data folder.
         print("Run a MATLAB calibration script...")
         try:
-            eng.calib_with_matlab(str_img_file_list, self.checker_size, nargout=0)
+            eng.calib_with_matlab(
+                str_img_file_list,
+                self.checker_size,
+                self.get_skewness,
+                self.get_tangential_distortion,
+                self.num_radial_distortion_coefs,
+                nargout=0
+            )
         except:
             print("MATLAB did not run successfully.")
+            self.matlab_success = False
 
-        if len(list(self.data_folder.glob("*.mat"))) != 0:
+        if (len(list(self.data_folder.glob("*.mat"))) != 0) and self.matlab_success:
 
-            print("*.mat files exist. Start loading and processing data.")
+            print("Start loading and processing data saved in *.mat files.")
 
             (
                 A,
@@ -167,7 +198,7 @@ class MatlabCalib(CameraCalib):
             plt.ylabel("Mean reprojection error (pixel)")
             plt.show()
         else:
-            raise FileNotFoundError("*.mat files do not exist.")
+            raise FileNotFoundError("*.mat files do not exist or MATLAB did not run successfully.")
 
         eng.quit()  # Terminate the MATLAB engine.
 

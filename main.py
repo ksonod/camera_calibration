@@ -17,11 +17,18 @@ CONFIG = {
     "checkerboard": {
         "num_corners": (8, 5),  # ([numbers of corners per column], [number of corners per row])
         "checker_size": 25,  # mm (millimeter)
-        "show_figure": True,
+        "show_figure": True,  # Show checkerboard images, detected corners, and reprojected points.
     },
+
     # "zhang2000": {  # Config for the CalibMethod.ZHANG2000 method.
     #     "get_skewness": False,  # gamma in an intrinsic matrix [[alpha, gamma, u0], [0, beta, v0], [0, 0, 1]]
     #     "optimize_parameters": True
+    # }
+
+    # "matlab": {
+    #     "get_skewness": False,
+    #     "get_tangential_distortion": False,
+    #     "num_radial_distortion_coefs": 2
     # }
 }
 

@@ -5,15 +5,18 @@
 % -------------------------------------------------------
 
 
-%% Define checkerboard size
-squareSize = 25;  % mm
+%% Define parameters
+squareSize = 25;  % checkerboard square size in mm
+estimate_skew = false; 
+estimate_tangential_dist_coefs = false;
+num_radial_dist_coefs = 2;
 
 %% Define images to process
 
 % Set manually
 % imageFileNames = {
-%     './data/IMG_001.jpg',...
-%     './data/IMG_002.jpg',...
+%     './data/img_001.jpg',...
+%     './data/img_002.jpg',...
 %     };
 % 
 
@@ -41,8 +44,8 @@ worldPoints = generateWorldPoints(detector, 'SquareSize', squareSize);
 
 % Calibrate the camera
 [cameraParams, imagesUsed, estimationErrors] = estimateCameraParameters(imagePoints, worldPoints, ...
-    'EstimateSkew', false, 'EstimateTangentialDistortion', false, ...
-    'NumRadialDistortionCoefficients', 2, 'WorldUnits', 'millimeters', ...
+    'EstimateSkew', estimate_skew, 'EstimateTangentialDistortion', estimate_tangential_dist_coefs, ...
+    'NumRadialDistortionCoefficients', num_radial_dist_coefs, 'WorldUnits', 'millimeters', ...
     'InitialIntrinsicMatrix', [], 'InitialRadialDistortion', [], ...
     'ImageSize', [mrows, ncols]);
 
