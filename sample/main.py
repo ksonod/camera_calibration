@@ -6,7 +6,7 @@ from algorithm.general.calib import CalibMethod
 
 
 INPUT_FILES = {
-    "img_folder": Path("./data")
+    "img_folder": Path("data")
 }
 
 CONFIG = {
